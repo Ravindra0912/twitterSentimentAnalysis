@@ -1,8 +1,6 @@
 import tweepy
-import password
 import json
 from tweepy.streaming import StreamListener
-from tweepy import streaming
 from tweepy.streaming import Stream
 from tweepy import OAuthHandler
 from textblob import TextBlob
