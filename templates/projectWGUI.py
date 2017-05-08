@@ -19,7 +19,7 @@ auth = OAuthHandler(consumer_key, consumer_secret)
 auth.set_access_token(access_token,access_token_secret)
 a2 = tweepy.API(auth)
 
-fp = open('positive.txt','w+')
+fp = open('positive.txt.txt','w+')
 fn = open('negative.txt','w+')
 
 

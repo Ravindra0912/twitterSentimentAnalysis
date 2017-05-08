@@ -1,3 +1,6 @@
+import requests
+from bs4 import BeautifulSoup
+from queue import *
 import tweepy
 import password
 import json
@@ -18,12 +21,55 @@ auth = OAuthHandler(consumer_key, consumer_secret)
 auth.set_access_token(access_token,access_token_secret)
 a2 = tweepy.API(auth)
 
+print("GLOBAL TRENDS OR MOVIES")
+query = input()
+
+if(query == "GLOBAL TRENDS"):
+    trends = a2.trends_place(1)
+    for trend in trends[0]["trends"]:
+        print(trend["name"])
+
 
 langs = {'ar': 'Arabic', 'bg': 'Bulgarian', 'ca': 'Catalan', 'cs': 'Czech', 'da': 'Danish', 'de': 'German', 'el': 'Greek', 'en': 'English', 'es': 'Spanish', 'et': 'Estonian',
          'fa': 'Persian', 'fi': 'Finnish', 'fr': 'French', 'hi': 'Hindi', 'hr': 'Croatian', 'hu': 'Hungarian', 'id': 'Indonesian', 'is': 'Icelandic', 'it': 'Italian', 'iw': 'Hebrew',
          'ja': 'Japanese', 'ko': 'Korean', 'lt': 'Lithuanian', 'lv': 'Latvian', 'ms': 'Malay', 'nl': 'Dutch', 'no': 'Norwegian', 'pl': 'Polish', 'pt': 'Portuguese', 'ro': 'Romanian',
          'ru': 'Russian', 'sk': 'Slovak', 'sl': 'Slovenian', 'sr': 'Serbian', 'sv': 'Swedish', 'th': 'Thai', 'tl': 'Filipino', 'tr': 'Turkish', 'uk': 'Ukrainian', 'ur': 'Urdu',
          'vi': 'Vietnamese', 'zh_CN': 'Chinese (simplified)', 'zh_TW': 'Chinese (traditional)'}
+
+
+
+q = Queue()
+
+
+class Spider:
+    def c_spider(self):
+        url = 'http://www.imdb.com/movies-in-theaters/?ref_=nv_mv_inth_1'
+        source_code = requests.get(url)
+        plain_text = source_code.text
+        soup = BeautifulSoup(plain_text,"lxml")
+        none = 0
+        movies = []
+        for link in soup.findAll('h4',{'itemprop':'name'}):
+            title= link.get('title')
+            none += 1
+            title=link.string
+            if(none > 8 and none < 15):
+                if(title != "None"):
+                    print(title)
+                    q.put(title)
+
+    # print(none)
+        return q.get(0)
+s = Spider()
+
+if query == "MOVIES":
+    s.c_spider()
+
+print("enter Search term")
+search_term = input()
+
+fn = open("negative.txt", "w+")
+fp = open("positive.txt", "w+")
 
 
 class Listener(StreamListener):
@@ -48,9 +94,11 @@ class Listener(StreamListener):
 
             if var.sentiment.polarity > 0:
                 self.p = self.p+1
+                fp.write(tweet)
 
             else:
                 self.n = self.n+1
+                fn.write(tweet)
 
             print("Polarity = " + str(var.sentiment.polarity))
             print("subjectivity = "+str(var.subjectivity))
@@ -61,9 +109,9 @@ class Listener(StreamListener):
             return False
 
 
-l1 = Listener(5)
-twitterStream = Stream(auth,Listener(5))
-twitterStream.filter(track=["Donald Trump"], languages=["en"])
+l1 = Listener(20)
+twitterStream = Stream(auth,Listener(20))
+twitterStream.filter(track=[search_term], languages=["en"])
 
 
 class Search(Listener):
@@ -73,42 +121,40 @@ class Search(Listener):
 
     def search_tweets(self):
 
-        search_results = tweepy.Cursor(a2.search, q="Donald Trump").items(self.num)
+        search_results = tweepy.Cursor(a2.search, q=search_term).items(self.num)
 
         for result in search_results:
             var = TextBlob(result.text)
-
-            #if var.sentiment.polarity != 0 or var.subjectivity != 0:
             print(result.text)
             a = var.sentiment.polarity
             b = var.subjectivity
-            #results.append(result.text)
+
             if var.sentiment.polarity < 0:
                 l1.n = l1.n+1
+                fn.write(result.text)
 
             else:
                 l1.p = l1.p + 1
+                fp.write(result.text)
+
             print("subjectivity = " + str(b))
             print("polarity = " + str(a))
             print("retweets = " + str(result.retweet_count))
-     #   print(str(j["retweet_count"]))
 
-       # else:
-#            continue
 
-num_of_tweets = 5
+num_of_tweets = 20
 src = Search(num_of_tweets)
 src.search_tweets()
-#print("p = " + str(p))
-#print("n = "+ str(n)
-ppercent = (l1.p/10)*100
-npercent =(l1.n/10)*100
+ppercent = (l1.p/20)*100
+npercent =(l1.n/20)*100
 print("like percent = " + str(ppercent))
 print("dislike percent = " + str(npercent))
 
+print("POSITIVE TWEETS :")
+print(fp.read())
+
+print("NEGATIVE TWEETS")
+print(fn.read())
 
 
-trends = a2.trends_place(1)
-for trend in trends[0]["trends"]:
-    print(trend["name"])
 

@@ -14,9 +14,10 @@ def c_spider():
         title= link.get('title')
         none += 1
         title=link.string
-        if(none > 6 and none < 19):
-            print(title)
-            q.put(title)
+        if(none > 8 and none < 15):
+            if(title != " None "):
+                print(title)
+                q.put(title)
 
     i =0
     # print(none)
